@@ -1,0 +1,42 @@
+-- [[ DRIVING EMPIRE AUTO-DELIVERY FARM ]]
+-- Execute this using a compatible Roblox exploit/executor.
+
+_G.AutoFarm = true -- Set to false to stop the loop
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
+local LocalPlayer = Players.LocalPlayer
+
+local function getCar()
+    for _, car in pairs(Workspace.Cars:GetChildren()) do
+        if car:FindFirstChild("Owner") and car.Owner.Value == LocalPlayer.Name then
+            return car
+        end
+    end
+    return nil
+end
+
+task.spawn(function()
+    while _G.AutoFarm do
+        task.wait(0.5)
+        
+        -- Start/Accept the Trailer Delivery Job at the Dealership
+        ReplicatedStorage.Network.JobRemote:InvokeServer("TrailerDelivery", "Dealership")
+        task.wait(0.5)
+        
+        -- Locate player's car and move it to the completion zone
+        local myCar = getCar()
+        if myCar and myCar:FindFirstChild("PrimaryPart") then
+            local completionPart = Workspace:FindFirstChild("CompletionRegion") or Workspace:FindFirstChild("DeliveryDropoff")
+            if completionPart then
+                -- Safely teleport the vehicle slightly above the dropoff point to trigger the completion
+                myCar:SetPrimaryPartCFrame(completionPart.CFrame * CFrame.new(0, 5, 0))
+                task.wait(0.5)
+                
+                -- Fire Server to claim rewards & finish job
+                ReplicatedStorage.Network.JobRemote:FireServer("CompleteJob")
+            end
+        end
+    end
+end)
